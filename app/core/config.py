@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,8 +18,13 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://localhost:16379/0"
 
-    DEBUG: bool = False
+    DEBUG: bool = True
     SERVICE_NAME: str = "wardrobe-service"
+
+    MINIO_ENDPOINT: str | None = os.getenv("MINIO_ENDPOINT")
+    MINIO_ACCESS_KEY: str | None = os.getenv("MINIO_ACCESS_KEY")
+    MINIO_SECRET_KEY: str | None = os.getenv("MINIO_SECRET_KEY")
+    MINIO_BUCKET: str | None = os.getenv("MINIO_BUCKET")
 
     model_config = SettingsConfigDict(
         env_file=".env",
