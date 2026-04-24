@@ -1,0 +1,64 @@
+services:
+  wardrobe-service:
+    build: .
+    container_name: outfit_wardrobe_api
+    env_file: .env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./migrations:/service/migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - wardrobe-network
+    restart: on-failure
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: outfit_wardrobe_pg
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: wardrobe_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_wardrobe:/var/lib/postgresql/data
+    networks:
+      - wardrobe-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d wardrobe_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: outfit_wardrobe_redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "16379:6379"
+    volumes:
+      - redisdata_wardrobe:/data
+    networks:
+      - wardrobe-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata_wardrobe:
+  redisdata_wardrobe:
+
+networks:
+  wardrobe-network:
+    driver: bridge
