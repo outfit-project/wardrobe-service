@@ -42,3 +42,8 @@ class WardrobeResponse(BaseModel):
 class UploadClothingItemResponse(BaseModel):
     item_id: str
     image_url: str
+
+
+class UpdateEmbeddingRequest(BaseModel):
+    item_id: uuid.UUID
+    embedding: list[float]

@@ -12,6 +12,8 @@ def _item_orm_to_schema(row: ItemORM) -> ClothingItem:
     emb = row.embedding
     if emb is None:
         embedding = None
+    elif isinstance(emb, list):
+        embedding = [float(x) for x in emb]
     elif hasattr(emb, "tolist"):
         embedding = [float(x) for x in emb.tolist()]
     else:
@@ -68,7 +70,13 @@ class ClothingRepository:
         rows = result.scalars().all()
         return [_item_orm_to_schema(r) for r in rows]
 
-    async def update_embedding(self, item_id: uuid.UUID, embedding: list[float]) -> None:
+    async def update_embedding(
+            self, item_id: uuid.UUID, embedding: list[float]
+    ) -> None:
         stmt = update(ItemORM).where(ItemORM.id == item_id).values(embedding=embedding)
-        await self._session.execute(stmt)
-        await self._session.commit()
+        try:
+            await self._session.execute(stmt)
+            await self._session.commit()
+        except Exception:
+            await self._session.rollback()
+            raise

@@ -5,12 +5,16 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Resp
 from app.core.security.deps import get_current_user
 from app.repositories.storage.image_proxy import image_proxy
 from app.schemas.categories import Category, Style
-from app.schemas.item_upload import UploadClothingItemResponse, WardrobeResponse
+from app.schemas.item_upload import (
+    UpdateEmbeddingRequest,
+    UploadClothingItemResponse,
+    WardrobeResponse,
+)
 from app.schemas.user import UserPayload
 from app.use_cases.item_case import (
     GetClothingItemImageDep,
     GetUserWardrobeDep,
-    UploadClothingItemDep,
+    UploadClothingItemDep, UpdateClothingItemDep,
 )
 
 item_router = APIRouter()
@@ -88,10 +92,15 @@ async def get_item_image(
     )
 
 
-@item_router.patch("/{item_id}")
+@item_router.patch("/embedding")
 async def update_item_embedding(
-        use_case: UploadClothingItemDep,
-        embedding: list[float],
-        user: UserPayload = Depends(get_current_user),
-):
-    await use_case
+    body: UpdateEmbeddingRequest,
+    use_case: UpdateClothingItemDep,
+    user: UserPayload = Depends(get_current_user),
+) -> Response:
+    await use_case.execute(
+        item_id=body.item_id,
+        embedding=body.embedding,
+        user_id=user.user_id,
+    )
+    return Response(status_code=200)
