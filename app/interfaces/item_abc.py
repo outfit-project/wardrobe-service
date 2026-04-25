@@ -5,7 +5,7 @@ from app.schemas.item_upload import ClothingItem
 
 
 class IClothingRepository(Protocol):
-    async def save(self, item: ClothingItem) -> None:
+    async def save(self, item: ClothingItem):
         pass
 
     async def get_by_id(self, item_id: uuid.UUID) -> ClothingItem:
