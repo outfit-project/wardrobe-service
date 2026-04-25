@@ -1,4 +1,6 @@
+import datetime
 import uuid
+from dataclasses import field, dataclass
 from typing import Optional
 
 from pydantic import BaseModel
@@ -12,17 +14,20 @@ class ItemUploadedEvent(BaseModel):
     image_url: str
 
 
-class ClothingItem:
+class ClothingItem(BaseModel):
+    id: uuid.UUID
     user_id: uuid.UUID
-    item_id: uuid.UUID
+    category: Category
     image_url: str
+
+    subcategory: Optional[str] = None
+    style: Optional[Style] = Style.UNDEFINED
+    color_hex: Optional[str] = None
 
     embedding: Optional[list[float]] = None
 
-    category: Category
-    subcategory: Optional[str] = None
-    style: Style.UNDEFINED
-    color_hex: Optional[str] = None
+    created_at: datetime = field(default_factory=datetime.utcnow)
 
-    def get_embedding(self, embedding: list[float]) -> None:
+    def set_embedding(self, embedding: list[float]) -> None:
         self.embedding = embedding
+

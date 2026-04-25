@@ -1,9 +1,10 @@
 import uuid
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from app.schemas.item_upload import ClothingItem
 
 
+@runtime_checkable
 class IClothingRepository(Protocol):
     async def save(self, item: ClothingItem):
         pass
