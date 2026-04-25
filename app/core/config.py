@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     ACCESS_EXPIRE_MIN: int = 15
     REFRESH_EXPIRE_DAYS: int = 30
 
+    ML_TASKS_QUEUE: str = os.getenv("ML_TASKS_QUEUE", "ml_tasks")
+
     REDIS_URL: str = "redis://localhost:16379/0"
 
     DEBUG: bool = True
