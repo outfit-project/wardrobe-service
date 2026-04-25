@@ -2,6 +2,8 @@ import json
 
 from redis.asyncio import Redis
 
+from app.schemas.item_upload import ItemUploadedEvent
+
 
 class RedisPublisher:
     def __init__(
@@ -12,7 +14,7 @@ class RedisPublisher:
         self._redis = redis_client
         self._queue = queue_name
 
-    async def publish(self, event) -> None:
+    async def publish(self, event: ItemUploadedEvent) -> None:
         payload = {
             "event_type": event.event_type,
             "data": {

@@ -29,9 +29,9 @@ class ScoringWeights(BaseModel):
 
     def __post_init__(self):
         for name, value in (
-            ("w_visual", self.w_visual),
-            ("w_tag", self.w_tag),
-            ("w_recency", self.w_recency),
+                ("w_visual", self.w_visual),
+                ("w_tag", self.w_tag),
+                ("w_recency", self.w_recency),
         ):
             if value < 0:
                 raise ValueError(f'{name} cannot be negative')
@@ -52,3 +52,19 @@ class Color(BaseModel):
             int(self.hex[5:7], 16),
 
         )
+
+
+class Category(str, Enum):
+    TOP = "top"
+    BOTTOM = "bottom"
+    SHOES = "shoes"
+    OUTERWEAR = "outerwear"
+    ACCESSORY = "accessory"
+
+
+class Style(str, Enum):
+    CASUAL = "casual"
+    FORMAL = "formal"
+    SPORT = "sport"
+    STREETWEAR = "streetwear"
+    UNDEFINED = "undefined"
