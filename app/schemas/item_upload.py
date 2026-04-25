@@ -1,6 +1,5 @@
-import datetime
 import uuid
-from datetime import timezone
+from datetime import datetime, timezone
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -28,8 +27,18 @@ class ClothingItem(BaseModel):
     embedding: Optional[list[float]] = None
 
     created_at: datetime = Field(
-        default_factory=lambda: datetime.datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(timezone.utc)
     )
 
     def set_embedding(self, embedding: list[float]) -> None:
         self.embedding = embedding
+
+
+class WardrobeResponse(BaseModel):
+    items: list[ClothingItem]
+    total: int
+
+
+class UploadClothingItemResponse(BaseModel):
+    item_id: str
+    image_url: str
