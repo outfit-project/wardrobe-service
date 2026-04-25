@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class Season(str, Enum):
@@ -27,22 +27,26 @@ class ScoringWeights(BaseModel):
     w_tag: float
     w_recency: float
 
-    def __post_init__(self):
+    @model_validator(mode="after")
+    def non_negative(self) -> "ScoringWeights":
         for name, value in (
                 ("w_visual", self.w_visual),
                 ("w_tag", self.w_tag),
                 ("w_recency", self.w_recency),
         ):
             if value < 0:
-                raise ValueError(f'{name} cannot be negative')
+                raise ValueError(f"{name} cannot be negative")
+        return self
 
 
 class Color(BaseModel):
     hex: str
 
-    def __post_init__(self):
+    @model_validator(mode="after")
+    def validate_hex(self) -> "Color":
         if not self.hex.startswith("#") or len(self.hex) != 7:
-            raise ValueError(f'Invalid hex color: {self.hex}')
+            raise ValueError(f"Invalid hex color: {self.hex}")
+        return self
 
     @property
     def as_rgb(self) -> tuple[int, int, int]:

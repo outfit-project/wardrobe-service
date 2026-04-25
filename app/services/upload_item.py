@@ -1,10 +1,7 @@
 import os
 import uuid
-from  uuid import UUID
+from uuid import UUID
 
-from fastapi import Depends, Form
-
-from app.core.security.deps import get_current_user
 from app.interfaces.event_abc import IEventPublisher
 from app.interfaces.image_abc import IImageStorage
 from app.interfaces.item_abc import IClothingRepository

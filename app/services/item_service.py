@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 
 from app.interfaces.image_abc import IImageStorage
 from app.interfaces.item_abc import IClothingRepository
@@ -21,7 +21,10 @@ class ClothingItemImage:
             raise LookupError(f"Image not found")
 
         if item.user_id != user_id:
-            raise Exception()
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden",
+            )
 
         try:
             return await self._storage.get_bytes(item.image_url)

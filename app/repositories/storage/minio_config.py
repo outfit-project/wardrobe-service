@@ -1,6 +1,6 @@
 from botocore.exceptions import ClientError
 from app.core.config import Settings
-from app.storage.minio_session import session_minio
+from app.repositories.storage.minio_session import session_minio
 
 
 async def unsure_bucket(settings: Settings):

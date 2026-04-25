@@ -16,7 +16,7 @@ class RedisPublisher:
 
     async def publish(self, event: ItemUploadedEvent) -> None:
         payload = {
-            "event_type": event.event_type,
+            "event_type": "new_item_uploaded",
             "data": {
                 "item_id": str(event.item_id),
                 "user_id": str(event.user_id),

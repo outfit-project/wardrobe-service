@@ -1,14 +1,15 @@
 import datetime
 import uuid
-from dataclasses import field, dataclass
+from datetime import timezone
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.categories import Category, Style
 
 
 class ItemUploadedEvent(BaseModel):
+    event_type: str = "item.uploaded"
     item_id: uuid.UUID
     user_id: uuid.UUID
     image_url: str
@@ -26,8 +27,9 @@ class ClothingItem(BaseModel):
 
     embedding: Optional[list[float]] = None
 
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.datetime.now(timezone.utc)
+    )
 
     def set_embedding(self, embedding: list[float]) -> None:
         self.embedding = embedding
-
