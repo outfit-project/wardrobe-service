@@ -96,11 +96,9 @@ async def get_item_image(
 async def update_item_embedding(
     body: UpdateEmbeddingRequest,
     use_case: UpdateClothingItemDep,
-    user: UserPayload = Depends(get_current_user),
 ) -> Response:
     await use_case.execute(
         item_id=body.item_id,
         embedding=body.embedding,
-        user_id=user.user_id,
     )
     return Response(status_code=200)

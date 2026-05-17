@@ -32,7 +32,6 @@ class ClothingItemImage:
             raise LookupError(f"Failed to get image") from e
 
     async def execute_public(self, item_id: uuid.UUID) -> tuple[bytes, str]:
-        """Отдаёт файл по id вещи без проверки владельца — для публичных URL в img src."""
         item = await self._repo.get_by_id(item_id)
         if not item or not item.image_url:
             raise LookupError("Image not found")
