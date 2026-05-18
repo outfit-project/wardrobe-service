@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     SERVICE_NAME: str = "wardrobe-service"
 
+    PUBLIC_BASE_URL: str = "http://localhost:8002"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+
     MINIO_ENDPOINT: str | None = os.getenv("MINIO_ENDPOINT")
     MINIO_ACCESS_KEY: str | None = os.getenv("MINIO_ACCESS_KEY")
     MINIO_SECRET_KEY: str | None = os.getenv("MINIO_SECRET_KEY")

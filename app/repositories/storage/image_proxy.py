@@ -1,6 +1,8 @@
-from fastapi import Request
 import uuid
 
-def image_proxy(request: Request, item_id:uuid.UUID) -> str:
-    base = str(request.base_url).rstrip("/")
+from app.core.config import settings
+
+
+def image_proxy(item_id: uuid.UUID) -> str:
+    base = settings.PUBLIC_BASE_URL.rstrip("/")
     return f"{base}/items/{item_id}/image"

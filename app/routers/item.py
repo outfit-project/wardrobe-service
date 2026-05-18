@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 
 from app.core.security.deps import get_current_user
 from app.repositories.storage.image_proxy import image_proxy
@@ -12,9 +12,11 @@ from app.schemas.item_upload import (
 )
 from app.schemas.user import UserPayload
 from app.use_cases.item_case import (
+    DeleteClothingItemDep,
     GetClothingItemImageDep,
     GetUserWardrobeDep,
-    UploadClothingItemDep, UpdateClothingItemDep,
+    UploadClothingItemDep,
+    UpdateClothingItemDep,
 )
 
 item_router = APIRouter()
@@ -22,14 +24,13 @@ item_router = APIRouter()
 
 @item_router.get("/", response_model=WardrobeResponse)
 async def list_user_items(
-    request: Request,
     use_case: GetUserWardrobeDep,
     user: UserPayload = Depends(get_current_user),
 ) -> WardrobeResponse:
     items = await use_case.execute(user_id=user.user_id)
     return WardrobeResponse(
         items=[
-            it.model_copy(update={"image_url": image_proxy(request, it.id)})
+            it.model_copy(update={"image_url": image_proxy(it.id)})
             for it in items
         ],
         total=len(items),
@@ -38,7 +39,6 @@ async def list_user_items(
 
 @item_router.post("/upload", response_model=UploadClothingItemResponse)
 async def upload_item(
-    request: Request,
     use_case: UploadClothingItemDep,
     user: UserPayload = Depends(get_current_user),
     category: str = Form(...),
@@ -72,7 +72,7 @@ async def upload_item(
     item_id = UUID(result["item_id"])
     return UploadClothingItemResponse(
         item_id=result["item_id"],
-        image_url=image_proxy(request, item_id),
+        image_url=image_proxy(item_id),
     )
 
 
@@ -90,6 +90,18 @@ async def get_item_image(
         media_type=content_type,
         headers={"Cache-Control": "public, max-age=86400"},
     )
+
+
+@item_router.delete("/{item_id}", status_code=204)
+async def delete_item(
+    item_id: UUID,
+    use_case: DeleteClothingItemDep,
+    user: UserPayload = Depends(get_current_user),
+) -> Response:
+    deleted = await use_case.execute(item_id=item_id, user_id=user.user_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return Response(status_code=204)
 
 
 @item_router.patch("/embedding")

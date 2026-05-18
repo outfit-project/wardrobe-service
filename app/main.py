@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.core.config import settings
+from app.core.cors import setup_cors
 from app.db.redis import close_redis
 from app.db.session import engine
 from app.routers import health as health_router
@@ -28,6 +29,8 @@ app = FastAPI(
     title=settings.SERVICE_NAME,
     lifespan=lifespan,
 )
+
+setup_cors(app)
 
 app.include_router(health_router.router, prefix="/health", tags=["health"])
 app.include_router(item_router, prefix="/items", tags=["item"])

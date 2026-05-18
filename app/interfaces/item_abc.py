@@ -17,3 +17,6 @@ class IClothingRepository(Protocol):
 
     async def update_embedding(self, item_id: uuid.UUID, embedding: list[float]) -> None:
         pass
+
+    async def delete(self, item_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+        pass

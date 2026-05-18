@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 
 from app.models import ItemORM
 from app.schemas.categories import Category, Style
@@ -77,6 +77,19 @@ class ClothingRepository:
         try:
             await self._session.execute(stmt)
             await self._session.commit()
+        except Exception:
+            await self._session.rollback()
+            raise
+
+    async def delete(self, item_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+        stmt = delete(ItemORM).where(
+            ItemORM.id == item_id,
+            ItemORM.user_id == user_id,
+        )
+        try:
+            result = await self._session.execute(stmt)
+            await self._session.commit()
+            return result.rowcount > 0
         except Exception:
             await self._session.rollback()
             raise

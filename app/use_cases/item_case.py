@@ -9,6 +9,7 @@ from app.messaging.redis_publisher import RedisPublisher
 from app.repositories.item import ClothingRepository
 from app.repositories.storage import ImageStorage
 from app.services import ClothingItemImage, GetUserWardrobe, UploadItem
+from app.services.delete_item import DeleteItem
 from app.services.update_item import UpdateItem
 
 
@@ -38,6 +39,10 @@ def get_update_item_case(session: SessionDep) -> UpdateItem:
     return UpdateItem(ClothingRepository(session))
 
 
+def get_delete_item_case(session: SessionDep) -> DeleteItem:
+    return DeleteItem(ClothingRepository(session))
+
+
 UploadClothingItemDep = Annotated[
     UploadItem,
     Depends(get_upload_clothing_item_case),
@@ -56,4 +61,9 @@ GetClothingItemImageDep = Annotated[
 GetUserWardrobeDep = Annotated[
     GetUserWardrobe,
     Depends(get_user_wardrobe_case),
+]
+
+DeleteClothingItemDep = Annotated[
+    DeleteItem,
+    Depends(get_delete_item_case),
 ]
