@@ -71,9 +71,13 @@ class ClothingRepository:
         return [_item_orm_to_schema(r) for r in rows]
 
     async def update_embedding(
-            self, item_id: uuid.UUID, embedding: list[float]
+            self,
+            item_id: uuid.UUID,
+            embedding: list[float],
+            style: Optional[Style],
+            category: Optional[Category]
     ) -> None:
-        stmt = update(ItemORM).where(ItemORM.id == item_id).values(embedding=embedding)
+        stmt = update(ItemORM).where(ItemORM.id == item_id).values(embedding=embedding, style=style, category=category)
         try:
             await self._session.execute(stmt)
             await self._session.commit()

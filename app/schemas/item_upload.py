@@ -47,3 +47,5 @@ class UploadClothingItemResponse(BaseModel):
 class UpdateEmbeddingRequest(BaseModel):
     item_id: uuid.UUID
     embedding: list[float]
+    style: str | None = None
+    category: str | None = None

@@ -14,6 +14,8 @@ class UpdateItem:
             *,
             item_id: uuid.UUID,
             embedding: list[float],
+            style: str,
+            category: str,
     ) -> None:
         item = await self._repo.get_by_id(item_id)
         if not item:
@@ -22,5 +24,6 @@ class UpdateItem:
                 detail="Item not found",
             )
         await self._repo.update_embedding(
-            item_id=item_id, embedding=embedding
+            item_id=item_id, embedding=embedding,
+            category=category, style=style
         )

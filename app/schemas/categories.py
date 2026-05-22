@@ -54,12 +54,12 @@ class Color(BaseModel):
             int(self.hex[1:3], 16),
             int(self.hex[3:5], 16),
             int(self.hex[5:7], 16),
-
         )
 
 
 class Category(str, Enum):
     TOP = "top"
+    OUTER = "outer"
     BOTTOM = "bottom"
     SHOES = "shoes"
     OUTERWEAR = "outerwear"

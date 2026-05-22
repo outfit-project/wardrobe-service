@@ -112,5 +112,8 @@ async def update_item_embedding(
     await use_case.execute(
         item_id=body.item_id,
         embedding=body.embedding,
+        category=body.category,
+        style=body.style
     )
+
     return Response(status_code=200)
