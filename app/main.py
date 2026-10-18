@@ -9,6 +9,7 @@ from app.db.redis import close_redis
 from app.db.session import engine
 from app.routers import health as health_router
 from app.routers.item import item_router
+from app.repositories.storage.minio_config import unsure_bucket
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
@@ -19,6 +20,7 @@ logger = logging.getLogger(settings.SERVICE_NAME)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await unsure_bucket(settings)
     yield
 
     await engine.dispose()

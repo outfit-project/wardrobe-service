@@ -22,13 +22,15 @@ def _item_orm_to_schema(row: ItemORM) -> ClothingItem:
     return ClothingItem(
         id=row.id,
         user_id=row.user_id,
-        category=Category(row.category),
+        category=Category(row.category) if row.category else None,
         image_url=row.image_url,
         subcategory=row.subcategory,
-        style=Style(row.style) if row.style else Style.UNDEFINED,
+        style=Style(row.style) if row.style else None,
         color_hex=row.color_hex,
         embedding=embedding,
         created_at=row.created_at,
+        processing_status=row.processing_status,
+        processing_error=row.processing_error,
     )
 
 
@@ -37,12 +39,14 @@ def _clothing_item_to_orm(item: ClothingItem) -> ItemORM:
     return ItemORM(
         id=item.id,
         user_id=item.user_id,
-        category=item.category.value,
+        category=item.category.value if item.category else None,
         image_url=item.image_url,
         subcategory=item.subcategory,
         style=style_val,
         color_hex=item.color_hex,
         embedding=item.embedding,
+        processing_status=item.processing_status,
+        processing_error=item.processing_error,
     )
 
 
@@ -77,7 +81,12 @@ class ClothingRepository:
             style: Optional[Style],
             category: Optional[Category]
     ) -> None:
-        stmt = update(ItemORM).where(ItemORM.id == item_id).values(embedding=embedding, style=style, category=category)
+        values = {"embedding": embedding}
+        if style is not None:
+            values["style"] = style
+        if category is not None:
+            values["category"] = category
+        stmt = update(ItemORM).where(ItemORM.id == item_id).values(**values)
         try:
             await self._session.execute(stmt)
             await self._session.commit()
@@ -90,6 +99,30 @@ class ClothingRepository:
             ItemORM.id == item_id,
             ItemORM.user_id == user_id,
         )
+        try:
+            result = await self._session.execute(stmt)
+            await self._session.commit()
+            return result.rowcount > 0
+        except Exception:
+            await self._session.rollback()
+            raise
+
+
+    async def update_processing(self, item_id: uuid.UUID, **values) -> bool:
+        stmt = update(ItemORM).where(ItemORM.id == item_id).values(**values)
+        try:
+            result = await self._session.execute(stmt)
+            await self._session.commit()
+            return result.rowcount > 0
+        except Exception:
+            await self._session.rollback()
+            raise
+
+    async def claim_retry(self, item_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+        stmt = update(ItemORM).where(
+            ItemORM.id == item_id, ItemORM.user_id == user_id,
+            ItemORM.processing_status == 'failed',
+        ).values(processing_status='pending', processing_error=None)
         try:
             result = await self._session.execute(stmt)
             await self._session.commit()

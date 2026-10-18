@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     REFRESH_EXPIRE_DAYS: int = 30
 
     ML_TASKS_QUEUE: str = os.getenv("ML_TASKS_QUEUE", "ml_tasks")
+    ML_SERVICE_TOKEN: str = ""
+    EMBEDDING_DIM: int = 512
 
     REDIS_URL: str = "redis://localhost:16379/0"
 

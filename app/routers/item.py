@@ -1,12 +1,15 @@
+import hmac
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Response, UploadFile
 
+from app.core.config import settings
 from app.core.security.deps import get_current_user
 from app.repositories.storage.image_proxy import image_proxy
 from app.schemas.categories import Category, Style
 from app.schemas.item_upload import (
     UpdateEmbeddingRequest,
+    UpdateProcessingRequest,
     UploadClothingItemResponse,
     WardrobeResponse,
 )
@@ -41,14 +44,14 @@ async def list_user_items(
 async def upload_item(
     use_case: UploadClothingItemDep,
     user: UserPayload = Depends(get_current_user),
-    category: str = Form(...),
+    category: str | None = Form(None),
     image: UploadFile = File(...),
     subcategory: str | None = Form(None),
     style: str | None = Form(None),
     color_hex: str | None = Form(None),
 ) -> UploadClothingItemResponse:
     try:
-        cat = Category(category)
+        cat = Category(category) if category else None
     except ValueError as e:
         raise HTTPException(status_code=400, detail="Invalid category") from e
 
@@ -73,6 +76,7 @@ async def upload_item(
     return UploadClothingItemResponse(
         item_id=result["item_id"],
         image_url=image_proxy(item_id),
+        processing_status=result["processing_status"],
     )
 
 
@@ -108,7 +112,14 @@ async def delete_item(
 async def update_item_embedding(
     body: UpdateEmbeddingRequest,
     use_case: UpdateClothingItemDep,
+    x_service_token: str = Header(default=""),
 ) -> Response:
+    if not settings.ML_SERVICE_TOKEN or not hmac.compare_digest(
+        x_service_token, settings.ML_SERVICE_TOKEN
+    ):
+        raise HTTPException(status_code=401, detail="Invalid service token")
+    if len(body.embedding) != settings.EMBEDDING_DIM:
+        raise HTTPException(status_code=422, detail="Invalid embedding dimension")
     await use_case.execute(
         item_id=body.item_id,
         embedding=body.embedding,
@@ -117,3 +128,27 @@ async def update_item_embedding(
     )
 
     return Response(status_code=200)
+
+
+@item_router.patch("/processing")
+async def update_item_processing(
+    body: UpdateProcessingRequest,
+    use_case: UpdateClothingItemDep,
+    x_service_token: str = Header(default=""),
+) -> Response:
+    if not settings.ML_SERVICE_TOKEN or not hmac.compare_digest(x_service_token, settings.ML_SERVICE_TOKEN):
+        raise HTTPException(401, "Invalid service token")
+    if body.embedding is not None and len(body.embedding) != settings.EMBEDDING_DIM:
+        raise HTTPException(422, "Invalid embedding dimension")
+    await use_case.processing(body)
+    return Response(status_code=200)
+
+
+@item_router.post("/{item_id}/retry", response_model=UploadClothingItemResponse)
+async def retry_item(
+    item_id: UUID,
+    use_case: UploadClothingItemDep,
+    user: UserPayload = Depends(get_current_user),
+) -> UploadClothingItemResponse:
+    result = await use_case.retry(item_id=item_id,user_id=user.user_id)
+    return UploadClothingItemResponse(**result,image_url=image_proxy(item_id))
