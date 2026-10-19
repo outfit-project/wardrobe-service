@@ -74,26 +74,6 @@ class ClothingRepository:
         rows = result.scalars().all()
         return [_item_orm_to_schema(r) for r in rows]
 
-    async def update_embedding(
-            self,
-            item_id: uuid.UUID,
-            embedding: list[float],
-            style: Optional[Style],
-            category: Optional[Category]
-    ) -> None:
-        values = {"embedding": embedding}
-        if style is not None:
-            values["style"] = style
-        if category is not None:
-            values["category"] = category
-        stmt = update(ItemORM).where(ItemORM.id == item_id).values(**values)
-        try:
-            await self._session.execute(stmt)
-            await self._session.commit()
-        except Exception:
-            await self._session.rollback()
-            raise
-
     async def delete(self, item_id: uuid.UUID, user_id: uuid.UUID) -> bool:
         stmt = delete(ItemORM).where(
             ItemORM.id == item_id,

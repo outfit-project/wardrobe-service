@@ -1,9 +1,11 @@
 import uuid
 from fastapi import HTTPException
 
+from app.interfaces.item_abc import IClothingRepository
+
 
 class UpdateItem:
-    def __init__(self, repo): self._repo = repo
+    def __init__(self, repo: IClothingRepository): self._repo = repo
 
     async def execute(self, *, item_id: uuid.UUID, embedding: list[float], style=None, category=None):
         if not await self._repo.get_by_id(item_id):

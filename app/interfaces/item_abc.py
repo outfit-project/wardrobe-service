@@ -15,7 +15,10 @@ class IClothingRepository(Protocol):
     async def list_by_user(self, user_id: uuid.UUID) -> list[ClothingItem]:
         pass
 
-    async def update_embedding(self, item_id: uuid.UUID, embedding: list[float], style:str, category:str) -> None:
+    async def update_processing(self, item_id: uuid.UUID, **values: object) -> bool:
+        pass
+
+    async def claim_retry(self, item_id: uuid.UUID, user_id: uuid.UUID) -> bool:
         pass
 
     async def delete(self, item_id: uuid.UUID, user_id: uuid.UUID) -> bool:

@@ -3,6 +3,7 @@ import uuid
 from uuid import UUID
 from fastapi import HTTPException
 from PIL import Image, UnidentifiedImageError
+from app.interfaces.item_abc import IClothingRepository
 from app.schemas.categories import Category, Style
 from app.schemas.item_upload import ClothingItem, ItemUploadedEvent
 
@@ -32,7 +33,7 @@ def validated_image(file_obj, content_type):
 
 
 class UploadItem:
-    def __init__(self, repo, storage, events):
+    def __init__(self, repo: IClothingRepository, storage, events):
         self._repo, self._storage, self._events = repo, storage, events
 
     async def _enqueue(self, item):

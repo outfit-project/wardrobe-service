@@ -1,8 +1,10 @@
+import hmac
 import uuid
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
+from app.core.config import settings
 from app.core.security.tokens import JWTTokenProvider
 from app.schemas.user import UserPayload
 
@@ -13,6 +15,11 @@ _token_provider = JWTTokenProvider()
 
 def get_token_provider() -> JWTTokenProvider:
     return _token_provider
+
+
+def require_ml_service_token(token: str) -> None:
+    if not settings.ML_SERVICE_TOKEN or not hmac.compare_digest(token, settings.ML_SERVICE_TOKEN):
+        raise HTTPException(status_code=401, detail='Invalid service token')
 
 
 async def get_current_user(

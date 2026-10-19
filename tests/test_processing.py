@@ -145,3 +145,18 @@ def test_invalid_inference_values_rejected_without_mutation(api):
     for change in ({'embedding':[1.0]*5},{'color_hex':'#gggggg'},{'category':None},{'embedding':[0.0]*512}):
         assert client.patch('/items/processing',json=base|change,headers=headers).status_code==422
     assert repo.items[item.id].processing_status=='pending'
+
+
+@pytest.mark.parametrize('route', ['processing', 'embedding'])
+@pytest.mark.parametrize('token', ['', 'wrong-token'])
+def test_both_callbacks_reject_invalid_service_tokens_without_mutation(api, route, token):
+    client, repo, _, _, owner = api
+    item = ClothingItem(id=uuid4(), user_id=owner, image_url='key')
+    repo.items[item.id] = item
+    payload = {'item_id': str(item.id), 'embedding': [1.0] * 512}
+    if route == 'processing':
+        payload['processing_status'] = 'processing'
+    response = client.patch(f'/items/{route}', json=payload, headers={'X-Service-Token': token})
+    assert response.status_code == 401
+    assert repo.items[item.id].processing_status == 'pending'
+    assert repo.items[item.id].embedding is None

@@ -1,10 +1,9 @@
-import hmac
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Response, UploadFile
 
 from app.core.config import settings
-from app.core.security.deps import get_current_user
+from app.core.security.deps import get_current_user, require_ml_service_token
 from app.repositories.storage.image_proxy import image_proxy
 from app.schemas.categories import Category, Style
 from app.schemas.item_upload import (
@@ -114,10 +113,7 @@ async def update_item_embedding(
     use_case: UpdateClothingItemDep,
     x_service_token: str = Header(default=""),
 ) -> Response:
-    if not settings.ML_SERVICE_TOKEN or not hmac.compare_digest(
-        x_service_token, settings.ML_SERVICE_TOKEN
-    ):
-        raise HTTPException(status_code=401, detail="Invalid service token")
+    require_ml_service_token(x_service_token)
     if len(body.embedding) != settings.EMBEDDING_DIM:
         raise HTTPException(status_code=422, detail="Invalid embedding dimension")
     await use_case.execute(
@@ -136,8 +132,7 @@ async def update_item_processing(
     use_case: UpdateClothingItemDep,
     x_service_token: str = Header(default=""),
 ) -> Response:
-    if not settings.ML_SERVICE_TOKEN or not hmac.compare_digest(x_service_token, settings.ML_SERVICE_TOKEN):
-        raise HTTPException(401, "Invalid service token")
+    require_ml_service_token(x_service_token)
     if body.embedding is not None and len(body.embedding) != settings.EMBEDDING_DIM:
         raise HTTPException(422, "Invalid embedding dimension")
     await use_case.processing(body)
