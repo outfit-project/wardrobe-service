@@ -2,7 +2,25 @@
 
 Owns garment records, photo storage, owner access and the asynchronous processing lifecycle. Built with FastAPI, PostgreSQL, Redis and S3-compatible object storage.
 
-[Project overview](../../README.md) · [ML worker](../ml-inference/README.md) · [Outfit service](../outfit-service/README.md)
+[ML worker](https://github.com/outfit-project/ml-inference) · [Outfit service](https://github.com/outfit-project/outfit-service) · [Run all services](https://github.com/outfit-project/api-gateway#run-all-repositories)
+
+## Start this repository
+
+Requirements: Docker with Compose 2.20+. From this repository:
+
+```bash
+cp .env.example .env
+docker network create vestis-services
+docker compose up --build -d --wait --wait-timeout 180
+```
+
+PowerShell also supports `cp`. Copy the example only for initial setup; reconcile an existing `.env` instead of overwriting it. Create the shared network once, skipping this step if it exists. Set `VESTIS_NETWORK` to use another pre-created network. Example secrets are local-development values; replace them for deployment.
+
+Open `http://localhost:8002/docs`. Only wardrobe, PostgreSQL, Redis and MinIO start. Migrations and bucket creation run automatically; all data uses persistent project-specific volumes. No files outside this repository are needed. `docker compose down` preserves the data.
+
+Wardrobe starts without auth or ML. Owner endpoints require an auth-issued JWT with a matching `SECRET_KEY`; uploads stay `pending` until a worker processes them. To connect ML, use the same network, set its `REDIS_URL=redis://vestis-wardrobe-redis:6379/0` and `MINIO_ENDPOINT=http://vestis-wardrobe-minio:9000`, and copy wardrobe's `ML_SERVICE_TOKEN`, storage credentials, bucket and queue name into ML's `.env`.
+
+The API alias is `outfit_wardrobe_api:8000`. `PUBLIC_BASE_URL` must be browser-reachable: default `http://localhost:8002`, or `http://localhost:8080` through the gateway. After changing it, recreate wardrobe with `docker compose up -d`.
 
 ## Upload lifecycle
 
@@ -17,7 +35,7 @@ Records store UUIDs, owner ID, storage key, category, subcategory, style, color 
 
 ## HTTP API
 
-Public base URL: `http://localhost:8080`. Owner endpoints require `Authorization: Bearer <access_token>`.
+Direct base URL: `http://localhost:8002`; an optional gateway uses `http://localhost:8080`. Owner endpoints require `Authorization: Bearer <access_token>`.
 
 | Method | Path | Authentication | Result |
 | --- | --- | --- | --- |
@@ -32,7 +50,7 @@ Public base URL: `http://localhost:8080`. Owner endpoints require `Authorization
 The upload request is multipart with an `image` field. Optional legacy fields are `category`, `subcategory`, `style` and `color_hex`. Example for a Bash-compatible shell, with an access token already set:
 
 ```bash
-curl -X POST http://localhost:8080/items/upload \
+curl -X POST http://localhost:8002/items/upload \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -F "image=@/path/to/shirt.jpg"
 ```
@@ -64,45 +82,43 @@ The legacy embedding callback accepts `item_id`, `embedding`, optional `category
 
 ## Configuration
 
-Settings: [app/core/config.py](app/core/config.py). The following values describe root Compose:
+Settings: [app/core/config.py](app/core/config.py). The following values describe this repository's Compose:
 
 | Variable | Value / purpose |
 | --- | --- |
 | `DB_HOST`, `DB_PORT`, `DB_NAME` | `wardrobe-db`, `5432`, `wardrobe_db` |
-| `DB_USER`, `DB_PASSWORD` | Root configuration |
+| `DB_USER`, `DB_PASSWORD` | Local `.env` |
 | `REDIS_URL`, `ML_TASKS_QUEUE` | `redis://wardrobe-redis:6379/0`, `ml_tasks` |
 | `SECRET_KEY`, `ALGORITHM` | Shared auth JWT secret; `HS256` |
-| `ML_SERVICE_TOKEN` | Generated callback secret; must match ML |
+| `ML_SERVICE_TOKEN` | Callback secret; must match ML |
 | `EMBEDDING_DIM` | `512`; must match the model |
 | `MINIO_ENDPOINT` | `http://minio:9000` |
 | `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET` | Shared S3 credentials/bucket; default bucket `wardrobe-photos` |
-| `PUBLIC_BASE_URL` | `http://localhost:8080`; browser-reachable gateway URL |
-| `CORS_ORIGINS`, `DEBUG` | Root browser origins; `false` |
+| `PUBLIC_BASE_URL` | `http://localhost:8002`; browser-reachable API or gateway URL |
+| `CORS_ORIGINS`, `DEBUG` | Localhost ports 3000, 5173, 8080; `false` |
 
-The service reads its local `.env`; root Compose injects its own explicit environment. Add application-only overrides to Compose rather than assuming every root `.env` key is forwarded.
+Compose reads the local `.env`; database/Redis/storage hostnames inside the wardrobe container are managed by Compose. `WARDROBE_PORT` changes the direct host port (default 8002). Update `PUBLIC_BASE_URL` and browser CORS settings when changing public addresses.
 
 ## Run, health and checks
 
-From the project root:
+From this repository:
 
 ```bash
-python scripts/setup.py
-docker compose up --build -d --wait --wait-timeout 900
-docker compose logs -f wardrobe ml-inference
-curl http://localhost:8080/health/wardrobe
+docker compose ps
+docker compose logs -f wardrobe
+curl http://localhost:8002/health/ready
 ```
 
 The container applies Alembic migrations before Uvicorn on port 8000. Lifespan startup creates the S3 bucket if missing. `/health/live` checks the process; `/health/ready` checks PostgreSQL and Redis. Readiness does not continuously probe S3 or the ML worker.
 
 For native development, configure reachable database/Redis/S3 endpoints, run `alembic upgrade head`, then `uvicorn app.main:app --reload --port 8000` here. Internal Compose dependencies have no published host ports.
 
-In an isolated Python 3.12 environment, from the project root:
+In an isolated Python 3.12 environment, from this repository:
 
 ```bash
-python -m pip install -r backend/wardrobe-service/requirements.txt -r requirements-test.txt
-cd backend/wardrobe-service
+python -m pip install -r requirements-dev.txt
 python -m pytest -q
 python -m compileall -q app
 ```
 
-Tests cover photo-only uploads, validation, failed enqueue/retry and protected processing callbacks. The root smoke script exercises real photo inference; see [verification](../../docs/verification.md).
+Tests cover photo-only uploads, validation, failed enqueue/retry and protected processing callbacks. For real inference, start the connected ML worker, upload a photo through `/docs` with an auth token and poll `GET /items/` until the item becomes `ready` or `failed`.
